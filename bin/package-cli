@@ -8,6 +8,7 @@ from package_name import cli
 PACKAGE_NAME = "package_name"
 COMMANDS = {}
 
+
 def run_sh():
     cli.SHELL_MODE = True
     try:
@@ -47,15 +48,103 @@ def load_modules():
     global COMMANDS
 
     for name in cli.__all__:
-        __import__("package_name.cli.%s" % name) # TODO dynamic package_name by var
+        __import__("package_name.cli.%s" % name)  # TODO dynamic package_name by var
         COMMANDS[name] = getattr(cli, name)
 
-def print_help(*args):
-    pass
+
+def print_help(*args): # TODO what is the mean '*' front of the args
+    if len(args) == 0:
+        help_str = """usage:
+    {0} [command] [subcommand] <args>
+        run {0} command
+    {0} sh
+        run {0} interactive mode
+    {0} help [command]
+        show help of each command
+    {0} help [command] [subcommand]
+        show help of each subcommand
+
+    list of commands
+        {1}"""
+        print help_str(PACKAGE_NAME + "-cli", ", ".join(COMMANDS.iterkeys()))
+    elif len(args) == 1:
+        if args[0] not in COMMANDS:
+            print "ERROR : unknown command '{0}'".format(args[0])
+            print_help()
+        else:
+            cmd = COMMANDS[args[0]]
+            # if it has no sub commands
+            if hasattr(cmd, '_execute'):
+                wrapper = getattr(cmd, '_execute')
+                if isinstance(wrapper, cli.CommnadWrapper):
+                    wrapper.parser.print_help()
+            else:
+                members = [getattr(cmd, name) for name in dir(cmd)]
+                wrappers = [wrapper for wrapper in members if isinstance(wrapper, cli.CommandWrapper)]
+
+                print "usage: {0} {1} [command] <args>".format(PACKAGE_NAME, args[0], )
+                print "list of subcommands"
+                infos = [("    " + wrapper.name, wrapper.doc) for wrapper in wrappers]
+                if infos:
+                    cli.format_lines(infos, rjust=False)
+    elif len(args) >= 2:
+        if args[0] not in COMMANDS:
+            print "ERROR : unknown command '{0}'".format(args[0])
+            print_help()
+        else:
+            cmd = COMMANDS[args[0]]
+            if hasattr(cmd, args[1]) and isinstance(getattr(cmd, args[1]), cli.CommandWrapper):
+                wrapper = getattr(cmd, args[1])
+                wrapper.parser.print_help()
+            else:
+                print "ERROR : unknown command '{0} {1}'".format(args[0], args[1])
+                print_help(args[0])
+    else:
+        print_help()
+
+
+def _check_args(*args):
+    try:
+        cmd = COMMANDS[args[0]]
+        if hasattr(cmd, '_execute'):
+            return False
+        if len(args) == 1:
+            return True
+        else:
+            return False
+    except KeyError:
+        return True
 
 
 def run_cmd(args):
-    pass
+    if len(args) == 0:
+        print_help()
+    elif args[0] == 'help':
+        print_help(*(args[1:])) # TODO know that what is the mean casting to *
+    elif args[0] == 'sh':
+        run_sh()
+    elif _check_args(*args):
+        print_help(*args)
+    elif args[0] in COMMANDS:
+        cmd = COMMANDS[args[0]]
+        if hasattr(cmd, '_execute'):
+            funcname = '_execute'
+        else:
+            funcname = args[1]
+
+        if hasattr(cmd, funcname) and isinstance(getattr(cmd, funcname), cli.CommandWrapper):
+            wrapper = getattr(cmd, funcname)
+            if hasattr(cmd, '_execute'):
+                params = args[1:]
+            else:
+                params = args[2:]
+            wrapper.call(params)
+        else:
+            print "ERROR : unknown command '{0} {1}'".format(args[0], args[1])
+            print_help(args[0])
+    else:
+        print "ERROR : unknown command '{0}'".format(args[0])
+        print_help()
 
 
 def main():
@@ -65,6 +154,7 @@ def main():
         print_help()
     else:
         run_cmd(sys.argv[1:])
+
 
 if __name__ == '__main__':
     main()
