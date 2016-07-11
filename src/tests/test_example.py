@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from package_name import example
+from package_name.module import example
+
 
 def test_example():
     result = example.example()
