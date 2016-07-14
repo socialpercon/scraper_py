@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 CURRENT_DIR="$(cd "`dirname "$0"`"; pwd)"
-export PYTHONPATH=${CURRENT_DIR}/../src/python:${CURRENT_DIR}:${PYTHONPATH}
+echo ${CURRENT_DIR}
+export PYTHONPATH=${CURRENT_DIR}/../src/main/python:${CURRENT_DIR}/../src/tests/python:${PYTHONPATH}
 NOSE_NOCAPUTRE=1
 
 dir=.
