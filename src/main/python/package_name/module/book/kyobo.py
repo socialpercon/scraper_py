@@ -40,22 +40,15 @@ def main(argv):
         print "start"
         mydriver.get(mybook_url)
         kyobo_url_list = ['http://used.kyobobook.co.kr/sellerPage/product/viewSellerProductList.ink?mmbrNmbr=62016023024']
-        link_list = get_link_list(mydriver)
-        print link_list
-        for link in link_list:
-            # link = u'http://book.naver.com/bookdb/book_detail.nhn?bid=7746778'
-            try:
-                isbn_list = []
-                isbn_list.append(get_isbn(link, mydriver))
-            except BaseException, e:
-                print "failed, reason: {0}".format(repr(e))
-        print isbn_list
-        f_writer = open('./isbn_list','w')
-        f_writer.write('\n'.join(isbn_list))
+        import package_name.context as context
+        import json
+        isbn_path = context.APPLICATION_HOME + '/src/tests/resources/isbn_list'
+        f_read = open(isbn_path, 'r')
+        book_list = json.loads(f_read.read())
         exist_book_list = []
-        for isbn in isbn_list:
+        for book in book_list:
             for kyobo_url in kyobo_url_list:
-                exist_book_list.append(kyobo_url, get_exist_book(isbn, mydriver))
+                exist_book_list.append(kyobo_url, get_exist_book(book[5], mydriver))
 
         print "end"
     except BaseException, e:

@@ -19,6 +19,7 @@ import yaml
 import os
 import package_name.context as context
 
+
 def main(argv):
     try:
         parser = argparse.ArgumentParser()
@@ -36,11 +37,12 @@ def main(argv):
         print "delay time: {0}".format(rand_time)
         # time.sleep(rand_time)
         isbn_path = context.APPLICATION_HOME + '/src/tests/resources/isbn_list'
+        print isbn_path
         f_read = open(isbn_path, 'r')
 
         isbn_list = []
         for line in f_read.readlines():
-            isbn_list.append(line.replace("\n",""))
+            isbn_list.append(line.replace("\n", ""))
 
         mydriver = webdriver.Firefox()
         aladin_url_format = "http://www.aladin.co.kr/usedstore/wstoremain.aspx?offcode=jamsil"
@@ -89,7 +91,7 @@ def get_exist_book(kyobo_url, isbn, mydriver):
         return replace
 
 
-def get_link_list( mydriver):
+def get_link_list(mydriver):
     link_list = []
     for div in mydriver.find_elements_by_xpath("//div[@class='thumb_type']"):
         link = div.find_element_by_css_selector('a').get_attribute('href')
