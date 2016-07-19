@@ -29,8 +29,13 @@ def main(argv):
         # time.sleep(rand_time)
 
         print "start"
-        # link_list = get_link_list(mydriver)
-        link_list = context.LINK_LIST
+        link_list = get_link_list(mydriver)
+        link_path = context.APPLICATION_HOME + '/src/tests/resources/link_list'
+        f_writer = open(link_path, 'w')
+        f_writer.write(link_list.dumps())
+        f_writer.close()
+
+        # link_list = context.LINK_LIST
         write_to_file_book_info(link_list)
         print "end"
     except BaseException, e:
@@ -40,9 +45,26 @@ def main(argv):
 def write_to_file_book_info(link_list):
     isbn_list = []
     ebook_isbn_list = []
-    pool = Pool(3)
-    book_infos = pool.map(get_book_info, link_list)
-    for book_info in book_infos:
+    event_num = 3
+    import math
+    max_int = int(math.ceil(float(len(link_list))/event_num))
+    data_iter = []
+
+    pre_event_num = 0
+    for i in xrange(1,event_num +1):
+        cal_num = max_int/event_num + pre_event_num
+        data_dict = {'links' : link_list[pre_event_num:cal_num], 'driver' : webdriver.Firefox()}
+        print data_dict
+        pre_event_num = cal_num
+        data_iter.append(data_dict)
+
+    pool = Pool(event_num)
+    book_infos = pool.map(get_books_info, data_iter)
+    book_tmp = []
+    for book_info_list in book_infos:
+        book_tmp = book_tmp + book_info_list
+
+    for book_info in book_tmp:
         if book_info['ebook']:
             ebook_isbn_list.append(book_info)
         else:
@@ -67,11 +89,21 @@ def get_link_list(mydriver):
         link_list.append(link)
     return link_list
 
+def get_books_info(data_dict):
+    mydriver = data_dict['driver']
+    link_list = data_dict['links']
+    book_list = []
+    for link in link_list:
+        book_list.append(get_book_info(mydriver, link))
 
-def get_book_info(link_tmp):
-    mydriver = webdriver.Firefox()
-    mydriver.get(link_tmp)
+    return book_list
+
+def get_book_info(mydriver, link):
     # element = mydriver.find_element_by_xpath("//div[@class='book_info_inner']")
+    try:
+        mydriver.get(link)
+    except BaseException, e:
+        print "cannot connect : {0}".format(link)
     book_info_dict = {}
 
     element = mydriver.find_element_by_xpath('//div[@class="book_info"]/h2')
@@ -113,7 +145,6 @@ def get_book_info(link_tmp):
     element = mydriver.find_element_by_xpath('//a[@id="txt_desc_point"]')
     href_value = element.get_attribute('href')
     book_info_dict['herf'] = href_value
-    mydriver.close()
     # pattern = ".*ISBN (.[0-9]+).*"
     # compile_pattern = re.compile(pattern)
     # isbn = compile_pattern.findall(text_data)
