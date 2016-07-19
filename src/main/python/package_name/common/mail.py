@@ -4,9 +4,9 @@ from email.mime.multipart import MIMEMultipart
 
 import yaml
 import config
-import log as log
+# import log as log
 
-LOG = log.getRootLogger()
+# LOG = log.getRootLogger()
 
 def get_smtp_config():
     try:
@@ -14,7 +14,8 @@ def get_smtp_config():
         with open(config_file, 'r') as stream:
             return yaml.load(stream)
     except IOError as e:
-        LOG.error('[ERROR] file: {0}, reason: {1}\n'.format(config_file, repr(e)))
+        pass
+        # LOG.error('[ERROR] file: {0}, reason: {1}\n'.format(config_file, repr(e)))
 
 
 def send_mail(cfg_smtp, output_data):
@@ -36,5 +37,6 @@ def send_mail(cfg_smtp, output_data):
         mail_server.close()
         return "OK"
     except BaseException as e:
-        LOG.error("send mail failed, reason: {0}".format(repr(e)))
+
+        # LOG.error("send mail failed, reason: {0}".format(repr(e)))
         return "FAIL"
