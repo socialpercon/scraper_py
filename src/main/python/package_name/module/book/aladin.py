@@ -2,10 +2,6 @@
 import re
 
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
 import argparse
 import sys
@@ -17,7 +13,12 @@ import smtplib
 import random
 import yaml
 import os
+import json
 import package_name.context as context
+import package_name.common.mail as mail
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 
 def main(argv):
@@ -39,29 +40,31 @@ def main(argv):
         isbn_path = context.APPLICATION_HOME + '/src/tests/resources/isbn_list'
         print isbn_path
         f_read = open(isbn_path, 'r')
-
-        isbn_list = []
-        for line in f_read.readlines():
-            isbn_list.append(line.replace("\n", ""))
+        book_list = json.loads(f_read.read())
 
         mydriver = webdriver.Firefox()
         aladin_url_format = "http://www.aladin.co.kr/usedstore/wstoremain.aspx?offcode=jamsil"
         print "start"
-        for isbn in isbn_list:
+        results = []
+        for book in book_list:
             try:
-                alradin(aladin_url_format, isbn, mydriver)
+                results.append(alradin(aladin_url_format, book, mydriver))
             except NoSuchElementException, e:
                 pass
         # link_list = get_link_list(mydriver)
         exist_book_list = []
+        config = mail.get_smtp_config()
+        print '\n'.join(results)
+        mail.send_mail(config, '\n'.join(results))
 
         print "end"
     except BaseException, e:
         print "login failed, reason: {0}".format(repr(e))
 
 
-def alradin(aladin_url_format, isbn, mydriver):
+def alradin(aladin_url_format, book, mydriver):
     mydriver.get(aladin_url_format)
+    isbn = book['isbn']
     input = "//input[@name='SearchWord']"
     btn = "//input[@class='searchBtn']"
     mydriver.find_element_by_xpath(input).send_keys(isbn)
@@ -71,7 +74,7 @@ def alradin(aladin_url_format, isbn, mydriver):
         elements.append(element.text.replace("\n", ""))
 
     if len(elements) >= 1:
-        print "isbn : {0}".format(isbn), "#".join(elements)
+        return "title : {0}, lowest : {1}, isbn : {2}, info : {3}".format(book['title'], book['lowest'] if book.has_key('lowest') else 'None' , isbn, "#".join(elements))
 
 
 def get_exist_book(kyobo_url, isbn, mydriver):
