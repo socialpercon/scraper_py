@@ -31,12 +31,12 @@ DEFAULT_CONFIG = {
 
 # 1s, 1m, 1h와 같이 표현되는 시간 필드. 최종적으로 초단위로 변환된다.
 TIME_FIELDS = (
-    TIME_INTERVAL
+    TIME_INTERVAL,
 )
 
 # ${PACKAGE_HOME}과 같이 환경변수가 포함된 Path를 절대경로로 바꾸어 줘야 하는 필드들.
 PATH_FIELDS = (
-    EMAIL_CONF_PATH
+    EMAIL_CONF_PATH,
 )
 
 config = None
