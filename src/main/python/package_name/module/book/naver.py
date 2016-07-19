@@ -6,10 +6,10 @@ import argparse
 import sys
 import random
 import package_name.context as context
+import json
 from gevent import monkey; monkey.patch_all()
 from gevent.pool import Pool
 
-mydriver = webdriver.Firefox()
 
 def main(argv):
     try:
@@ -29,10 +29,12 @@ def main(argv):
         # time.sleep(rand_time)
 
         print "start"
+        mydriver = webdriver.Firefox()
         link_list = get_link_list(mydriver)
+        mydriver.close()
         link_path = context.APPLICATION_HOME + '/src/tests/resources/link_list'
         f_writer = open(link_path, 'w')
-        f_writer.write(link_list.dumps())
+        f_writer.write(json.dumps(link_list))
         f_writer.close()
 
         # link_list = context.LINK_LIST
@@ -49,11 +51,13 @@ def write_to_file_book_info(link_list):
     import math
     max_int = int(math.ceil(float(len(link_list))/event_num))
     data_iter = []
-
+    driver_pool = []
     pre_event_num = 0
     for i in xrange(1,event_num +1):
         cal_num = max_int/event_num + pre_event_num
-        data_dict = {'links' : link_list[pre_event_num:cal_num], 'driver' : webdriver.Firefox()}
+        firefox = webdriver.Firefox()
+        driver_pool.append(firefox)
+        data_dict = {'links' : link_list[pre_event_num:cal_num], 'driver' : firefox}
         print data_dict
         pre_event_num = cal_num
         data_iter.append(data_dict)
@@ -71,16 +75,17 @@ def write_to_file_book_info(link_list):
             isbn_list.append(book_info)
     isbn_path = context.APPLICATION_HOME + '/src/tests/resources/isbn_list'
     f_writer = open(isbn_path, 'w')
-    f_writer.write(isbn_list.dumps())
+    f_writer.write(json.dumps(isbn_list))
     f_writer.close()
     ebook_isbn_path = context.APPLICATION_HOME + '/src/tests/resources/ebook_isbn_list'
     f_writer = open(ebook_isbn_path, 'w')
-    f_writer.write(ebook_isbn_list.dumps())
+    f_writer.write(json.dumps(ebook_isbn_list))
     f_writer.close()
+    for driver in driver_pool:
+        driver.cloes()
 
 
 def get_link_list(mydriver):
-    mydriver = webdriver.Firefox()
     mybook_url = context.MY_BOOK_URL
     mydriver.get(mybook_url)
     link_list = []
@@ -123,17 +128,7 @@ def get_book_info(mydriver, link):
         retail = element.text.replace(',', '')
         book_info_dict['normal'] = retail
 
-    elements = mydriver.find_elements_by_xpath('//div[@class="book_info_inner"]/div')
-    element = elements[2]
-    origin_value = element.text
-    if len(origin_value) == 2:
-        page = origin_value.split('|')[0].split(' ')[1]
-        book_info_dict['page'] = page
-        isbn = origin_value.split('|')[1].split(' ')[1]
-        book_info_dict['isbn'] = isbn
-    elif len(origin_value) == 1:
-        isbn = origin_value.split('|')[0].split(' ')[1]
-        book_info_dict['isbn'] = isbn
+    book_info_dict['isbn'] = get_isbn(mydriver)
 
     ebook_bool = False
     try:
@@ -151,8 +146,21 @@ def get_book_info(mydriver, link):
     return book_info_dict
 
 
-def get_isbn(link_tmp, mydriver):
-    mydriver.get(link_tmp)
+# def get_isbn(book_info_dict, mydriver):
+#     elements = mydriver.find_elements_by_xpath('//div[@class="book_info_inner"]/div')
+#     element = elements[2]
+#     origin_value = element.text
+#     if len(origin_value) == 2:
+#         page = origin_value.split('|')[0].split(' ')[1]
+#         book_info_dict['page'] = page
+#         isbn = origin_value.split('|')[1].split(' ')[1]
+#         book_info_dict['isbn'] = isbn
+#     elif len(origin_value) == 1:
+#         isbn = origin_value.split('|')[0].split(' ')[1]
+#         book_info_dict['isbn'] = isbn
+
+
+def get_isbn(mydriver):
     element = mydriver.find_element_by_xpath("//div[@class='book_info_inner']")
     text_data = element.text.replace('\n', '')
     # pattern = ".*|ISBN 9(.*)|.*"
