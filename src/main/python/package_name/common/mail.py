@@ -10,7 +10,7 @@ import config
 
 def get_smtp_config():
     try:
-        config_file = config.get_config_path(config.EMAIL_CONF_PATH)
+        config_file = config.get_preference(config.EMAIL_CONF_PATH)
         with open(config_file, 'r') as stream:
             return yaml.load(stream)
     except IOError as e:
