@@ -48,13 +48,17 @@ def main(argv):
         results = []
         for book in book_list:
             try:
-                results.append(alradin(aladin_url_format, book, mydriver))
+                result = alradin(aladin_url_format, book, mydriver)
+                if result is None:
+                    pass
+                else:
+                    results.append(result)
             except NoSuchElementException, e:
                 pass
         # link_list = get_link_list(mydriver)
         exist_book_list = []
-        config = mail.get_smtp_config()
         print '\n'.join(results)
+        config = mail.get_smtp_config()
         mail.send_mail(config, '\n'.join(results))
 
         print "end"
@@ -75,6 +79,8 @@ def alradin(aladin_url_format, book, mydriver):
 
     if len(elements) >= 1:
         return "title : {0}, lowest : {1}, isbn : {2}, info : {3}".format(book['title'], book['lowest'] if book.has_key('lowest') else 'None' , isbn, "#".join(elements))
+    else:
+        return None
 
 
 def get_exist_book(kyobo_url, isbn, mydriver):
