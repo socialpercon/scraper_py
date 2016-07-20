@@ -20,8 +20,8 @@ def get_smtp_config():
 
 def send_mail(cfg_smtp, output_data):
     try:
-        title = cfg_smtp["TITLE"]
         cfg_smtp = cfg_smtp["SMTP"]
+        title = cfg_smtp["TITLE"]
         msg = MIMEMultipart('alternative')
         msg['From'] = cfg_smtp['ACCOUNT']
         msg['TO'] = ','.join(cfg_smtp['TO_LIST'])
@@ -37,6 +37,7 @@ def send_mail(cfg_smtp, output_data):
         mail_server.close()
         return "OK"
     except BaseException as e:
+        print "send mail failed, reason: {0}".format(repr(e))
 
         # LOG.error("send mail failed, reason: {0}".format(repr(e)))
         return "FAIL"
