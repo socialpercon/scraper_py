@@ -59,7 +59,7 @@ def main(argv):
         exist_book_list = []
         print '\n'.join(results)
         config = mail.get_smtp_config()
-        mail.send_mail(config, '\n'.join(results))
+        mail.send_mail(config, "<br>".join(results))
 
         print "end"
     except BaseException, e:
