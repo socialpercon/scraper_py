@@ -57,7 +57,6 @@ def main(argv):
                 pass
         # link_list = get_link_list(mydriver)
         exist_book_list = []
-        print '\n'.join(results)
         config = mail.get_smtp_config()
         mail.send_mail(config, "<br>".join(results))
 
