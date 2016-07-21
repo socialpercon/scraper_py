@@ -5,6 +5,7 @@ import threading
 import json
 import package_name.common.mail as mail
 import yaml
+import time
 from package_name.common import config
 
 reload(sys)
@@ -15,7 +16,7 @@ config_file = config.get_preference(config.CAFE_CONF_PATH)
 
 used_cafe_url = 'http://cafe.naver.com/joonggonara'
 
-import time
+
 def main(argv):
     mydriver = webdriver.Firefox()
     data = {}
@@ -24,66 +25,78 @@ def main(argv):
         with open(config_file, 'r') as stream:
             conf = yaml.load(stream)
 
-        fillter = conf['FILLTER']
-        black_list = conf['BLACK_LIST']
-        interval = conf['INTERVAL']
-        print conf
-        mydriver.get(used_cafe_url)
-        input = "//input[@name='query']"
-        btn = '//img[@class="btn-search-green"]'
-        keyword = u"노트 4"
-        mydriver.find_element_by_xpath(input).send_keys(keyword)
-        mydriver.find_element_by_xpath(btn).click()
-        mydriver.switch_to.frame(mydriver.find_element_by_xpath("//iframe[@name='cafe_main']"))
+        for keyword in conf.keys():
+            key_conf = conf[keyword]
+            select_notify(keyword, key_conf, data, mydriver)
 
-        i = 0
-        elements = []
-        for element in mydriver.find_elements_by_xpath("//tr[@align='center']"):
-            if i == 0:
-                i = i + 1
-                continue
-            number = element.find_element_by_xpath(".//span[@class='m-tcol-c list-count']").text
-            href = element.find_element_by_xpath(".//span[@class='aaa']/a").get_attribute('href')
-            achor = element.find_element_by_xpath(".//span[@class='aaa']").text
-            author = element.find_element_by_xpath(".//span[@class='wordbreak']").text
-            create_time = element.find_element_by_xpath(".//td[@class='view-count m-tcol-c']").text
-            result = {'no': number,
-                      'href': href,
-                      'title': achor,
-                      'author': author,
-                      'create_time': create_time}
-            elements.append(result)
-            # link = div.find_element_by_css_selector('a').get_attribute('href')
-            # link_list.append(link)
-        tmps = []
-        for element in elements:
-            black_bool = False
-            for black in black_list:
-                if black == element['author']:
-                    black_bool = True
-            if black_bool:
-                continue
-            title_bool = False
-            for word in fillter:
-                if element['title'].find(word) > -1:
-                    title_bool = True
-            if title_bool:
-                continue
-            if data.has_key(element['no']):
+
+def select_notify(keyword, conf, data, mydriver):
+    fillter = conf['FILLTER']
+    black_list = conf['BLACK_LIST']
+    interval = conf['INTERVAL']
+    print conf
+    mydriver.get(used_cafe_url)
+    input = "//input[@name='query']"
+    btn = '//img[@class="btn-search-green"]'
+    mydriver.find_element_by_xpath(input).send_keys(keyword)
+    mydriver.find_element_by_xpath(btn).click()
+    mydriver.switch_to.frame(mydriver.find_element_by_xpath("//iframe[@name='cafe_main']"))
+    i = 0
+    elements = get_board_list(i, mydriver)
+    tmps = fillter_contents(black_list, data, elements, fillter, mydriver)
+    if len(tmps) > 0:
+        result_str = json.dumps(tmps, indent=4, ensure_ascii=False)
+        result_str.replace("\n", "<BR>")
+        config = mail.get_smtp_config()
+        mail.send_mail(config, result_str)
+    time.sleep(interval)
+
+
+def fillter_contents(black_list, data, elements, fillter, mydriver):
+    tmps = []
+    for element in elements:
+        black_bool = False
+        for black in black_list:
+            if black == element['author']:
+                black_bool = True
+        if black_bool:
+            continue
+        title_bool = False
+        for word in fillter:
+            if element['title'].find(word) > -1:
+                title_bool = True
+        if title_bool:
+            continue
+        if data.has_key(element['no']):
+            pass
+        else:
+            contents = get_contents(element['href'], fillter, mydriver)
+            data[element['no']] = contents
+            if contents is None:
                 pass
             else:
-                contents = get_contents(element['href'], fillter, mydriver)
-                data[element['no']] = contents
-                if contents is None:
-                    pass
-                else:
-                    tmps.append(element)
-        if len(tmps) > 0:
-            result_str = json.dumps(tmps, indent=4, ensure_ascii=False)
-            result_str.replace("\n", "<BR>")
-            config = mail.get_smtp_config()
-            mail.send_mail(config, result_str)
-        time.sleep(interval)
+                tmps.append(element)
+    return tmps
+
+
+def get_board_list(i, mydriver):
+    elements = []
+    for element in mydriver.find_elements_by_xpath("//tr[@align='center']"):
+        if i == 0:
+            i = i + 1
+            continue
+        number = element.find_element_by_xpath(".//span[@class='m-tcol-c list-count']").text
+        href = element.find_element_by_xpath(".//span[@class='aaa']/a").get_attribute('href')
+        achor = element.find_element_by_xpath(".//span[@class='aaa']").text
+        author = element.find_element_by_xpath(".//span[@class='wordbreak']").text
+        create_time = element.find_element_by_xpath(".//td[@class='view-count m-tcol-c']").text
+        result = {'no': number,
+                  'href': href,
+                  'title': achor,
+                  'author': author,
+                  'create_time': create_time}
+        elements.append(result)
+    return elements
 
 
 def get_contents(link, fillter, mydriver):
