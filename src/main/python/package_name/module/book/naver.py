@@ -169,6 +169,10 @@ def get_isbn(mydriver):
     isbn = compile_pattern.findall(text_data)
     return isbn[0]
 
+def get_mybook_html(mydriver):
+    # div class="btn_mr"
+    pass
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
